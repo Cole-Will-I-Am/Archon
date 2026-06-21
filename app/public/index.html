@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>manticthink · à la carte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<!-- AUTH -->
+<section id="auth" class="auth">
+  <div class="auth-card">
+    <div class="brand"><span class="brand-k">manticthink</span><h1>À LA CARTE</h1></div>
+    <p class="tag">Bring your own keys. Compose AI services. Pay your own providers.</p>
+    <div class="seg">
+      <button id="tab-login" class="seg-btn active">Sign in</button>
+      <button id="tab-register" class="seg-btn">Create account</button>
+    </div>
+    <form id="auth-form">
+      <label>Email<input id="email" type="email" autocomplete="email" required></label>
+      <label>Password<input id="password" type="password" autocomplete="current-password" minlength="8" required></label>
+      <div id="auth-error" class="err"></div>
+      <button id="auth-submit" type="submit" class="primary">Sign in</button>
+    </form>
+    <p class="fine">Keys you add are encrypted at rest (AES-256-GCM). Served over HTTPS.</p>
+  </div>
+</section>
+
+<!-- APP -->
+<section id="app" class="app hidden">
+  <header class="top">
+    <div class="brand-row"><span class="brand-k">manticthink</span><span class="brand-name">à la carte</span></div>
+    <div class="top-right"><span id="who" class="who"></span><button id="logout" class="ghost">Sign out</button></div>
+  </header>
+
+  <div class="grid">
+    <!-- providers -->
+    <aside class="panel">
+      <div class="panel-h"><span class="ph-k">01</span><h2>Providers</h2></div>
+      <p class="panel-d">Your keys, encrypted on the server. The platform never bills you for tokens.</p>
+      <div id="connected" class="connected"></div>
+      <div class="addkey">
+        <div class="ak-h">Add a key</div>
+        <label class="lbl">Provider
+          <select id="prov-select"></select>
+        </label>
+        <label class="lbl" id="baseurl-wrap" style="display:none">Base URL
+          <input id="baseurl" type="text" placeholder="http://127.0.0.1:11434/v1">
+        </label>
+        <label class="lbl">API key
+          <input id="apikey" type="password" placeholder="sk-...">
+        </label>
+        <div id="key-error" class="err"></div>
+        <button id="save-key" class="primary sm">Save key</button>
+      </div>
+    </aside>
+
+    <!-- chat -->
+    <main class="panel chat">
+      <div class="panel-h"><span class="ph-k">02</span><h2>Chat</h2></div>
+      <div class="chat-controls">
+        <select id="chat-prov" class="ctl"></select>
+        <input id="chat-model" class="ctl" list="model-list" placeholder="model">
+        <datalist id="model-list"></datalist>
+        <button id="clear-chat" class="ghost sm">Clear</button>
+      </div>
+      <div id="messages" class="messages">
+        <div class="empty">Pick a connected provider and a model, then send a message. The request runs with <em>your</em> key.</div>
+      </div>
+      <form id="chat-form" class="composer">
+        <textarea id="chat-input" rows="2" placeholder="Message…"></textarea>
+        <button id="send" type="submit" class="primary">Send</button>
+      </form>
+    </main>
+  </div>
+  <footer class="foot">manticthink à la carte · MVP control plane on the VPS · keys encrypted at rest</footer>
+</section>
+
+<script src="/app.js"></script>
+</body>
+</html>

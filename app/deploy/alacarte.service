@@ -1,0 +1,16 @@
+[Unit]
+Description=manticthink a la carte (BYOK control plane)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/alacarte
+EnvironmentFile=/root/alacarte/.env
+ExecStart=/usr/bin/node /root/alacarte/server.mjs
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,9 @@
+# cloudflared config - dedicated tunnel for the app
+#   cloudflared tunnel create alacarte
+#   cloudflared tunnel route dns alacarte alacarte.<your-domain>
+tunnel: <TUNNEL_UUID>
+credentials-file: /root/.cloudflared/<TUNNEL_UUID>.json
+ingress:
+  - hostname: alacarte.<your-domain>
+    service: http://127.0.0.1:8123
+  - service: http_status:404

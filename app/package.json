@@ -1,0 +1,9 @@
+{
+  "name": "alacarte",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "manticthink a la carte - BYOK AI services control plane (MVP)",
+  "engines": { "node": ">=22.5" },
+  "scripts": { "start": "node server.mjs" }
+}
