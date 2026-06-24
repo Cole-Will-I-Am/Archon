@@ -1,4 +1,6 @@
 'use strict';
+
+/* ---------- tiny helpers ---------- */
 const $ = (id) => document.getElementById(id);
 const api = async (method, path, body) => {
   const r = await fetch(path, {
@@ -10,12 +12,33 @@ const api = async (method, path, body) => {
   try { data = await r.json(); } catch {}
   return { ok: r.ok, status: r.status, data };
 };
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let META = { providers: {} };
 let MODE = 'login';
 let MESSAGES = [];
 
-// ---------- auth ----------
+/* ===================================================================
+   SCREEN ROUTING  (landing → auth → app)
+   =================================================================== */
+function showScreen(name) {
+  $('landing').classList.toggle('hidden', name !== 'landing');
+  $('auth').classList.toggle('hidden', name !== 'auth');
+  $('app').classList.toggle('hidden', name !== 'app');
+  $('nav').classList.toggle('hidden', name !== 'landing');
+  if (name !== 'app') window.scrollTo(0, 0);
+}
+function openAuth(mode) { setMode(mode); showScreen('auth'); $('email').focus(); }
+
+$('nav-signin').onclick = () => openAuth('login');
+$('nav-register').onclick = () => openAuth('register');
+$('hero-register').onclick = () => openAuth('register');
+$('cta-register').onclick = () => openAuth('register');
+$('auth-back').onclick = () => showScreen('landing');
+
+/* ===================================================================
+   AUTH
+   =================================================================== */
 function setMode(m) {
   MODE = m;
   $('tab-login').classList.toggle('active', m === 'login');
@@ -35,12 +58,14 @@ $('auth-form').onsubmit = async (e) => {
   const { ok, data } = await api('POST', MODE === 'login' ? '/api/login' : '/api/register', { email, password });
   if (!ok) { $('auth-error').textContent = data.error || 'Something went wrong'; return; }
   $('password').value = '';
-  await boot();
+  await enterApp();
 };
 
 $('logout').onclick = async () => { await api('POST', '/api/logout'); location.reload(); };
 
-// ---------- providers ----------
+/* ===================================================================
+   PROVIDERS (key vault)
+   =================================================================== */
 function fillProviderSelect() {
   const sel = $('prov-select');
   sel.innerHTML = '';
@@ -73,7 +98,7 @@ function renderConnected(connected) {
   const box = $('connected');
   box.innerHTML = '';
   if (!connected.length) {
-    box.innerHTML = '<div class="none">No keys yet — add one below.</div>';
+    box.innerHTML = '<div class="none">No keys yet — add one below to start.</div>';
   } else {
     for (const c of connected) {
       const label = META.providers[c.provider]?.label || c.provider;
@@ -81,13 +106,12 @@ function renderConnected(connected) {
       div.className = 'pchip';
       div.innerHTML = `<div><div class="pn">${label}</div>${c.baseUrl ? `<div class="pmeta">${c.baseUrl}</div>` : ''}</div>`;
       const btn = document.createElement('button');
-      btn.title = 'Remove'; btn.textContent = '×';
+      btn.title = 'Remove'; btn.setAttribute('aria-label', 'Remove ' + label); btn.textContent = '×';
       btn.onclick = async () => { await api('DELETE', '/api/keys/' + encodeURIComponent(c.provider)); await refreshMe(); };
       div.appendChild(btn);
       box.appendChild(div);
     }
   }
-  // chat provider select = connected only
   const cp = $('chat-prov');
   const prev = cp.value;
   cp.innerHTML = '';
@@ -114,7 +138,9 @@ function fillModels() {
 }
 $('chat-prov').onchange = () => { $('chat-model').value = ''; fillModels(); };
 
-// ---------- chat ----------
+/* ===================================================================
+   CHAT
+   =================================================================== */
 function addMsg(role, content) {
   const m = $('messages');
   const empty = m.querySelector('.empty'); if (empty) empty.remove();
@@ -155,7 +181,93 @@ $('chat-form').onsubmit = async (e) => {
   MESSAGES.push({ role: 'assistant', content: data.text || '' });
 };
 
-// ---------- boot ----------
+/* ===================================================================
+   LANDING: provider menu (live from /api/meta)
+   =================================================================== */
+function renderProviderMenu() {
+  const el = $('provider-menu');
+  if (!el) return;
+  const entries = Object.entries(META.providers);
+  if (!entries.length) { el.innerHTML = '<div class="menu-loading mono">No providers configured.</div>'; return; }
+  el.innerHTML = '';
+  for (const [, p] of entries) {
+    const row = document.createElement('div');
+    row.className = 'menu-row';
+    const models = (p.models && p.models.length)
+      ? p.models.slice(0, 3).join(' · ')
+      : (p.needsBaseUrl ? 'any model · your base URL' : 'any model');
+    row.innerHTML =
+      `<span class="menu-name">${p.label}</span>` +
+      `<span class="menu-leader"></span>` +
+      `<span class="menu-models">${models}</span>` +
+      `<span class="menu-tick">supported</span>`;
+    el.appendChild(row);
+  }
+}
+
+/* ===================================================================
+   SIGNATURE: the key vault animation
+   =================================================================== */
+const HEX = '0123456789abcdef';
+const randHex = (n) => Array.from({ length: n }, () => HEX[(Math.random() * 16) | 0]).join('');
+const SAMPLE_PREFIXES = ['sk-ant-api03-', 'sk-proj-', 'sk-or-v1-', 'gsk_'];
+let vaultAnim = 0;
+
+function sampleKey() {
+  const pre = SAMPLE_PREFIXES[(Math.random() * SAMPLE_PREFIXES.length) | 0];
+  const b62 = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789';
+  const tail = Array.from({ length: 10 }, () => b62[(Math.random() * b62.length) | 0]).join('');
+  return pre + tail + '…';
+}
+
+function lockVault() {
+  const fields = [
+    { el: $('vault-iv'),  len: 24 },   // 12-byte IV
+    { el: $('vault-tag'), len: 32 },   // 16-byte GCM tag
+    { el: $('vault-ct'),  len: 48 },   // ciphertext (truncated by CSS)
+  ];
+  if (fields.some(f => !f.el)) return;
+  $('vault-plain').textContent = sampleKey();
+  const targets = fields.map(f => randHex(f.len));
+
+  if (reduceMotion) { fields.forEach((f, i) => f.el.textContent = targets[i]); return; }
+
+  const token = ++vaultAnim;
+  const start = performance.now();
+  const DUR = 900;
+  (function frame(now) {
+    if (token !== vaultAnim) return;
+    const t = Math.min(1, (now - start) / DUR);
+    const eased = 1 - Math.pow(1 - t, 2);
+    fields.forEach((f, i) => {
+      const reveal = Math.floor(eased * f.len);
+      const fin = targets[i].slice(0, reveal);
+      const scr = randHex(f.len - reveal);
+      f.el.textContent = fin + scr;
+    });
+    if (t < 1) requestAnimationFrame(frame);
+  })(start);
+}
+$('vault-relock').onclick = lockVault;
+
+/* ===================================================================
+   Scroll reveal
+   =================================================================== */
+function initReveal() {
+  if (reduceMotion || !('IntersectionObserver' in window)) return;
+  const targets = document.querySelectorAll('.section-head, .step, .menu, .sec-card, .cta-wrap');
+  targets.forEach(t => t.classList.add('reveal'));
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    }
+  }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+  targets.forEach(t => io.observe(t));
+}
+
+/* ===================================================================
+   BOOT
+   =================================================================== */
 async function refreshMe() {
   const { ok, data } = await api('GET', '/api/me');
   if (!ok) return false;
@@ -163,12 +275,21 @@ async function refreshMe() {
   renderConnected(data.connected || []);
   return true;
 }
+async function enterApp() {
+  const signedIn = await refreshMe();
+  if (signedIn) showScreen('app');
+  else { showScreen('auth'); setMode('login'); }
+}
 async function boot() {
   const meta = await api('GET', '/api/meta');
   META = meta.data || { providers: {} };
   fillProviderSelect();
+  renderProviderMenu();
+  lockVault();
+  initReveal();
+
   const signedIn = await refreshMe();
-  if (signedIn) { $('auth').classList.add('hidden'); $('app').classList.remove('hidden'); }
-  else { $('app').classList.add('hidden'); $('auth').classList.remove('hidden'); setMode('login'); }
+  if (signedIn) showScreen('app');
+  else showScreen('landing');
 }
 boot();

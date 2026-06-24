@@ -3,81 +3,248 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>manticthink · à la carte</title>
+<title>à la carte — bring-your-own-key AI control plane</title>
+<meta name="description" content="A bring-your-own-key control plane. Add your provider keys once — encrypted before they touch disk — then run Anthropic, OpenAI, and any OpenAI-compatible model. You pay your providers, never us.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23080B14'/%3E%3Cpath d='M19.5 9a4.5 4.5 0 0 0-4.4 5.5L8 21.6V25h3.4l1-1v-2h2v-2h2l1.1-1.1A4.5 4.5 0 1 0 19.5 9Zm1.2 4.2a1.3 1.3 0 1 1 0-2.6 1.3 1.3 0 0 1 0 2.6Z' fill='%23E6A93C'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 
-<!-- AUTH -->
-<section id="auth" class="auth">
+<!-- ============ NAV ============ -->
+<nav class="nav" id="nav">
+  <a class="nav-brand" href="#top">
+    <span class="key-glyph" aria-hidden="true"></span>
+    <span class="nav-brand-k">manticthink</span>
+    <span class="nav-brand-name">à la carte</span>
+  </a>
+  <div class="nav-links">
+    <a href="#how">How it works</a>
+    <a href="#menu">Providers</a>
+    <a href="#security">Security</a>
+  </div>
+  <div class="nav-cta">
+    <button class="btn btn-ghost" id="nav-signin">Sign in</button>
+    <button class="btn btn-solid" id="nav-register">Create account</button>
+  </div>
+</nav>
+
+<!-- ============ LANDING ============ -->
+<main id="landing" class="landing">
+
+  <!-- HERO -->
+  <header class="hero" id="top">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <div class="eyebrow">Bring-your-own-key · AI control plane</div>
+        <h1 class="hero-h1">Run every model<br>on <span class="accent">your own keys.</span></h1>
+        <p class="hero-sub">à la carte is a bring-your-own-key control plane. Add your provider keys once — encrypted before they ever touch disk — then send a message to Anthropic, OpenAI, or any OpenAI-compatible model. The request runs on <em>your</em> key. You pay the provider. Never us, never per token.</p>
+        <div class="hero-actions">
+          <button class="btn btn-solid btn-lg" id="hero-register">Create account</button>
+          <a class="btn btn-ghost btn-lg" href="#how">See how it works</a>
+        </div>
+        <div class="hero-trust mono">AES-256-GCM at rest · scrypt + HttpOnly sessions · no per-token markup</div>
+      </div>
+
+      <!-- SIGNATURE: the key vault -->
+      <aside class="vault" aria-label="How your key is stored">
+        <div class="vault-head">
+          <span class="mono vault-title">Key vault</span>
+          <span class="pill pill-safe" id="vault-pill"><span class="lock" aria-hidden="true"></span>Encrypted</span>
+        </div>
+        <div class="vault-row">
+          <span class="mono vault-label">your key</span>
+          <code class="mono vault-plain" id="vault-plain">sk-ant-api03-•••</code>
+        </div>
+        <div class="vault-arrow" aria-hidden="true">
+          <span class="mono">AES-256-GCM</span>
+          <span class="vault-arrow-line"></span>
+        </div>
+        <div class="vault-store">
+          <div class="vault-field"><span class="mono vault-k">iv</span><code class="mono vault-v" id="vault-iv"></code></div>
+          <div class="vault-field"><span class="mono vault-k">tag</span><code class="mono vault-v" id="vault-tag"></code></div>
+          <div class="vault-field"><span class="mono vault-k">ct</span><code class="mono vault-v" id="vault-ct"></code></div>
+        </div>
+        <div class="vault-foot">
+          <span class="mono">This is the entire database row. Your key isn't in it.</span>
+          <button class="vault-relock mono" id="vault-relock" type="button">re-encrypt ↻</button>
+        </div>
+      </aside>
+    </div>
+  </header>
+
+  <!-- HOW IT WORKS -->
+  <section class="section section-light" id="how">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow eyebrow-dark">How it works</div>
+        <h2 class="section-h2">Three steps, one minute.</h2>
+      </div>
+      <ol class="steps">
+        <li class="step">
+          <div class="step-n mono">01</div>
+          <h3 class="step-h">Add your keys</h3>
+          <p class="step-p">Paste a provider key. It's encrypted with AES-256-GCM on the server before it's written — the database only ever holds ciphertext.</p>
+        </li>
+        <li class="step">
+          <div class="step-n mono">02</div>
+          <h3 class="step-h">Pick a service</h3>
+          <p class="step-p">Choose a provider and a model and start a chat. Model routing, RAG, and custom MCPs are next on the roadmap — same vault, more services.</p>
+        </li>
+        <li class="step">
+          <div class="step-n mono">03</div>
+          <h3 class="step-h">It runs on your key</h3>
+          <p class="step-p">We decrypt in memory, call your provider with your key, and return the response. Their pricing, their limits, their bill — straight to you.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- PROVIDER MENU -->
+  <section class="section section-wash" id="menu">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow eyebrow-dark">The menu</div>
+        <h2 class="section-h2">Every provider, one vault.</h2>
+        <p class="section-lede">Connect what you already pay for. Anything OpenAI-compatible works out of the box — point it at a base URL and go.</p>
+      </div>
+      <div class="menu" id="provider-menu">
+        <div class="menu-loading mono">loading providers…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECURITY -->
+  <section class="section section-dark" id="security">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow">Key custody</div>
+        <h2 class="section-h2 on-dark">Your keys go in.<br>Only ciphertext comes out.</h2>
+        <p class="section-lede on-dark">A leaked key spends your money, so custody is the whole job. Here's exactly what happens to one.</p>
+      </div>
+      <div class="sec-grid">
+        <div class="sec-card">
+          <div class="sec-icon" aria-hidden="true">🔒</div>
+          <h3 class="sec-h">Encrypted at rest</h3>
+          <p class="sec-p">AES-256-GCM. Each row is just <code class="mono">iv</code>, <code class="mono">tag</code>, and <code class="mono">ct</code> — authenticated ciphertext. The plaintext key is never stored.</p>
+        </div>
+        <div class="sec-card">
+          <div class="sec-icon" aria-hidden="true">⛓️</div>
+          <h3 class="sec-h">Hardened sessions</h3>
+          <p class="sec-p">Passwords are scrypt-hashed. Sessions are HMAC-signed, <code class="mono">HttpOnly</code>, <code class="mono">Secure</code> cookies — no tokens sitting in your browser storage.</p>
+        </div>
+        <div class="sec-card">
+          <div class="sec-icon" aria-hidden="true">🛡️</div>
+          <h3 class="sec-h">Private transport</h3>
+          <p class="sec-p">Served only over HTTPS, through a dedicated Cloudflare tunnel isolated from everything else on the box. No public ports opened.</p>
+        </div>
+        <div class="sec-card">
+          <div class="sec-icon" aria-hidden="true">↩︎</div>
+          <h3 class="sec-h">No markup, full control</h3>
+          <p class="sec-p">We never see your provider invoice and never charge per token. Add a key, or revoke it, in one click whenever you want.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLOSING CTA -->
+  <section class="section section-light cta-band">
+    <div class="wrap cta-wrap">
+      <h2 class="section-h2">Bring your keys.</h2>
+      <p class="section-lede">Create an account, add a provider, send your first message. The whole thing takes about a minute.</p>
+      <button class="btn btn-solid btn-lg" id="cta-register">Create account</button>
+      <p class="cta-fine mono">Early MVP · running on a single VPS · registration is open for now</p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <span class="key-glyph" aria-hidden="true"></span>
+    <span class="mono">manticthink · à la carte — MVP control plane. Keys encrypted at rest.</span>
+  </footer>
+</main>
+
+<!-- ============ AUTH ============ -->
+<section id="auth" class="auth hidden">
   <div class="auth-card">
-    <div class="brand"><span class="brand-k">manticthink</span><h1>À LA CARTE</h1></div>
-    <p class="tag">Bring your own keys. Compose AI services. Pay your own providers.</p>
+    <button class="auth-back mono" id="auth-back" type="button">← back</button>
+    <div class="auth-brand">
+      <span class="key-glyph" aria-hidden="true"></span>
+      <div>
+        <div class="nav-brand-k">manticthink</div>
+        <h1 class="auth-title">à la carte</h1>
+      </div>
+    </div>
+    <p class="auth-tag">Bring your own keys. Run any model. Pay your providers directly.</p>
     <div class="seg">
-      <button id="tab-login" class="seg-btn active">Sign in</button>
-      <button id="tab-register" class="seg-btn">Create account</button>
+      <button id="tab-login" class="seg-btn active" type="button">Sign in</button>
+      <button id="tab-register" class="seg-btn" type="button">Create account</button>
     </div>
     <form id="auth-form">
-      <label>Email<input id="email" type="email" autocomplete="email" required></label>
-      <label>Password<input id="password" type="password" autocomplete="current-password" minlength="8" required></label>
-      <div id="auth-error" class="err"></div>
-      <button id="auth-submit" type="submit" class="primary">Sign in</button>
+      <label class="field">Email<input id="email" type="email" autocomplete="email" placeholder="you@domain.com" required></label>
+      <label class="field">Password<input id="password" type="password" autocomplete="current-password" minlength="8" placeholder="8+ characters" required></label>
+      <div id="auth-error" class="err" role="alert"></div>
+      <button id="auth-submit" type="submit" class="btn btn-solid btn-block">Sign in</button>
     </form>
-    <p class="fine">Keys you add are encrypted at rest (AES-256-GCM). Served over HTTPS.</p>
+    <p class="auth-fine mono">Keys you add are encrypted at rest (AES-256-GCM) and served over HTTPS.</p>
   </div>
 </section>
 
-<!-- APP -->
-<section id="app" class="app hidden">
-  <header class="top">
-    <div class="brand-row"><span class="brand-k">manticthink</span><span class="brand-name">à la carte</span></div>
-    <div class="top-right"><span id="who" class="who"></span><button id="logout" class="ghost">Sign out</button></div>
+<!-- ============ APP ============ -->
+<section id="app" class="dash hidden">
+  <header class="dash-top">
+    <div class="dash-brand">
+      <span class="key-glyph" aria-hidden="true"></span>
+      <span class="nav-brand-k">manticthink</span>
+      <span class="dash-brand-name">à la carte</span>
+    </div>
+    <div class="dash-right">
+      <span id="who" class="who mono"></span>
+      <button id="logout" class="btn btn-ghost btn-sm">Sign out</button>
+    </div>
   </header>
 
-  <div class="grid">
-    <!-- providers -->
-    <aside class="panel">
-      <div class="panel-h"><span class="ph-k">01</span><h2>Providers</h2></div>
-      <p class="panel-d">Your keys, encrypted on the server. The platform never bills you for tokens.</p>
+  <div class="dash-grid">
+    <!-- providers / vault -->
+    <aside class="card">
+      <div class="card-head">
+        <h2 class="card-h">Your providers</h2>
+        <span class="card-tag mono">encrypted at rest</span>
+      </div>
+      <p class="card-d">Keys are stored as ciphertext. The platform never bills you for tokens.</p>
       <div id="connected" class="connected"></div>
       <div class="addkey">
-        <div class="ak-h">Add a key</div>
-        <label class="lbl">Provider
-          <select id="prov-select"></select>
-        </label>
-        <label class="lbl" id="baseurl-wrap" style="display:none">Base URL
-          <input id="baseurl" type="text" placeholder="http://127.0.0.1:11434/v1">
-        </label>
-        <label class="lbl">API key
-          <input id="apikey" type="password" placeholder="sk-...">
-        </label>
-        <div id="key-error" class="err"></div>
-        <button id="save-key" class="primary sm">Save key</button>
+        <div class="addkey-h mono">Add a key</div>
+        <label class="field">Provider<select id="prov-select"></select></label>
+        <label class="field" id="baseurl-wrap" style="display:none">Base URL<input id="baseurl" type="text" placeholder="http://127.0.0.1:11434/v1"></label>
+        <label class="field">API key<input id="apikey" type="password" placeholder="sk-…"></label>
+        <div id="key-error" class="err" role="alert"></div>
+        <button id="save-key" class="btn btn-solid btn-block" type="button">Save key</button>
       </div>
     </aside>
 
     <!-- chat -->
-    <main class="panel chat">
-      <div class="panel-h"><span class="ph-k">02</span><h2>Chat</h2></div>
+    <main class="card chat">
+      <div class="card-head">
+        <h2 class="card-h">Chat</h2>
+        <button id="clear-chat" class="btn btn-ghost btn-sm">Clear</button>
+      </div>
       <div class="chat-controls">
         <select id="chat-prov" class="ctl"></select>
-        <input id="chat-model" class="ctl" list="model-list" placeholder="model">
+        <input id="chat-model" class="ctl ctl-model" list="model-list" placeholder="model">
         <datalist id="model-list"></datalist>
-        <button id="clear-chat" class="ghost sm">Clear</button>
       </div>
       <div id="messages" class="messages">
         <div class="empty">Pick a connected provider and a model, then send a message. The request runs with <em>your</em> key.</div>
       </div>
       <form id="chat-form" class="composer">
         <textarea id="chat-input" rows="2" placeholder="Message…"></textarea>
-        <button id="send" type="submit" class="primary">Send</button>
+        <button id="send" type="submit" class="btn btn-solid">Send</button>
       </form>
     </main>
   </div>
-  <footer class="foot">manticthink à la carte · MVP control plane on the VPS · keys encrypted at rest</footer>
+  <footer class="dash-foot mono">request → decrypt in memory → your provider → response. keys never logged.</footer>
 </section>
 
 <script src="/app.js"></script>
